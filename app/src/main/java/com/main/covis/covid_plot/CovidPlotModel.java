@@ -3,6 +3,7 @@ package com.main.covis.covid_plot;
 public class CovidPlotModel {
 
     private String msg;
+    private String msg2;
 
     public CovidPlotModel() {}
 
