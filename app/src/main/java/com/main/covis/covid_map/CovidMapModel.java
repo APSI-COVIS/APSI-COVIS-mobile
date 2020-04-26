@@ -1,12 +1,12 @@
-package com.main.covis.model;
+package com.main.covis.covid_map;
 
-public class CovidData {
+public class CovidMapModel {
 
     private String msg;
 
-    public CovidData() {}
+    public CovidMapModel() {}
 
-    public CovidData(String message){
+    public CovidMapModel(String message){
         this.msg = message;
     }
 

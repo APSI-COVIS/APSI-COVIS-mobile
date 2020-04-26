@@ -1,6 +1,6 @@
-package com.main.covis.contract;
+package com.main.covis.covid_map;
 
-public interface ContractCovid {
+public interface CovidMapContract {
 
     interface View {
         void showMessage(String message);
