@@ -21,7 +21,6 @@ public class CovidPlotModel {
     }
 
     private String msg;
-    private String msg2;
 
     public CovidPlotModel() {}
 
