@@ -5,5 +5,9 @@
     <color name="colorAccent">#D81B60</color>
     <color name="iconSelected">#E91E63</color>
     <color name="iconNotSelected">#CBFDFDFD</color>
+    <color name="blue">#2196F3</color>
+    <color name="red">#F44336</color>
+    <color name="green">#4CAF50</color>
+
 
 </resources>
