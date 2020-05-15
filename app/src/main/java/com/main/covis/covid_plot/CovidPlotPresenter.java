@@ -5,7 +5,7 @@ public class CovidPlotPresenter implements CovidPlotContract.Presenter {
     private CovidPlotModel covidData;
 
     public CovidPlotPresenter(){
-        CovidPlotModel newCovidData = new CovidPlotModel("Wszyscy umrzemy");
+        CovidPlotModel newCovidData = new CovidPlotModel("Nikt nie umrze");
         this.covidData = newCovidData;
     }
     @Override
