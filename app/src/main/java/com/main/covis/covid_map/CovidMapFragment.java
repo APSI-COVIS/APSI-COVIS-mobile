@@ -12,7 +12,6 @@ import android.widget.TextView;
 import com.main.covis.R;
 
 import android.graphics.Color;
-import android.os.Bundle;
 import android.widget.Toast;
 
 //import com.mapbox.mapboxandroiddemo.R;
@@ -32,15 +31,21 @@ import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+
+import org.w3c.dom.Text;
+
 import timber.log.Timber;
 
 import static com.mapbox.mapboxsdk.style.expressions.Expression.all;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.any;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.division;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
@@ -51,12 +56,15 @@ import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.lt;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.rgb;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.sum;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleTranslate;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconTextFit;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
@@ -70,9 +78,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
     private MapView mapView;
     private MapboxMap mapboxMap;
     private MainActivity activity;
-    private String newString = "";
     private CovidMapPresenter presenter;
-    TextView homeText;
 
 
 
@@ -93,10 +99,6 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-
-        // Inflate the layout for this fragment
-        homeText = activity.findViewById(R.id.homeTextView);
-
         mapView = activity.findViewById(R.id.mapView);
 
         mapView.onCreate(savedInstanceState);
@@ -115,12 +117,12 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
                         style.setTransition(new TransitionOptions(0, 0, false));
 
                         mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
-                                12.099, -79.045), 3));
+                                51.919438, 19.145136), 3));
 
                         addClusteredGeoJsonSource(style);
                         style.addImage(
                                 "cross-icon-id",
-                                Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.ic_home))),
+                                Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.ic_circle))),
                                 true
                         );
 
@@ -143,11 +145,11 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
 // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes from
 // 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
                     new GeoJsonSource("earthquakes",
-                            new URI("https://www.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson"),
+                            new URI("asset://earthquakes.geojson"),
                             new GeoJsonOptions()
                                     .withCluster(true)
-                                    .withClusterMaxZoom(14)
-                                    .withClusterRadius(50)
+                                    .withClusterMaxZoom(4)
+                                    .withClusterRadius(60)
                     )
             );
         } catch (URISyntaxException uriSyntaxException) {
@@ -161,25 +163,25 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
                 iconImage("cross-icon-id"),
                 iconSize(
                         division(
-                                get("mag"), literal(4.0f)
+                                get("cases"), literal(4.0f)
                         )
                 ),
                 iconColor(
-                        interpolate(exponential(1), get("mag"),
+                        interpolate(exponential(1), get("cases"),
                                 stop(2.0, rgb(0, 255, 0)),
-                                stop(4.5, rgb(0, 0, 255)),
+                                stop(4, rgb(0, 0, 255)),
                                 stop(7.0, rgb(255, 0, 0))
                         )
                 )
         );
-        unclustered.setFilter(has("mag"));
+        unclustered.setFilter(has("cases"));
         loadedMapStyle.addLayer(unclustered);
 
 // Use the earthquakes GeoJSON source to create three layers: One layer for each cluster category.
 // Each point range gets a different fill color.
         int[][] layers = new int[][] {
-                new int[] {150, ContextCompat.getColor(activity.getApplicationContext(), R.color.red)},
-                new int[] {20, ContextCompat.getColor(activity.getApplicationContext(), R.color.green)},
+                new int[] {7, ContextCompat.getColor(activity.getApplicationContext(), R.color.red)},
+                new int[] {4, ContextCompat.getColor(activity.getApplicationContext(), R.color.green)},
                 new int[] {0, ContextCompat.getColor(activity.getApplicationContext(), R.color.blue)}
         };
 
@@ -192,13 +194,16 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
             );
 
             Expression pointCount = toNumber(get("point_count"));
-
+//            Expression pointCount = toNumber(get("cases"));
 // Add a filter to the cluster layer that hides the circles based on "point_count"
+
             circles.setFilter(
                     i == 0
                             ? all(has("point_count"),
+//                            ? all(has("cases"),
                             gte(pointCount, literal(layers[i][0]))
                     ) : all(has("point_count"),
+//                            ) : all(has("cases"),
                             gte(pointCount, literal(layers[i][0])),
                             lt(pointCount, literal(layers[i - 1][0]))
                     )
@@ -209,7 +214,8 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
 //Add the count labels
         SymbolLayer count = new SymbolLayer("count", "earthquakes");
         count.setProperties(
-                textField(Expression.toString(get("point_count"))),
+                //textField(Expression.toString(get("point_count"))),
+                textField(Expression.toString(get("cases"))),
                 textSize(12f),
                 textColor(Color.WHITE),
                 textIgnorePlacement(true),
