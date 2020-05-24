@@ -3,18 +3,18 @@ package com.main.covis.covid_map;
 import androidx.fragment.app.Fragment;
 
 import android.content.Context;
+import android.graphics.PointF;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.main.covis.R;
 
 import android.graphics.Color;
 import android.widget.Toast;
 
-//import com.mapbox.mapboxandroiddemo.R;
 import com.main.covis.main.MainActivity;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -25,6 +25,7 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.CircleLayer;
+import com.mapbox.mapboxsdk.style.layers.FillLayer;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
@@ -61,6 +62,7 @@ import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleTranslate;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
@@ -72,7 +74,7 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textIgnorePlacem
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textSize;
 
 
-public class CovidMapFragment extends Fragment implements CovidMapContract.View {
+public class CovidMapFragment extends Fragment implements CovidMapContract.View, MapboxMap.OnMapClickListener {
 
 
     private MapView mapView;
@@ -112,8 +114,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
                     @Override
                     public void onStyleLoaded(@NonNull Style style) {
 
-// Disable any type of fading transition when icons collide on the map. This enhances the visual
-// look of the data clustering together and breaking apart.
+
                         style.setTransition(new TransitionOptions(0, 0, false));
 
                         mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
@@ -130,6 +131,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+                map.addOnMapClickListener(CovidMapFragment.this);
             }
         });
 
@@ -139,77 +141,73 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
 
     private void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
 
-// Add a new source from the GeoJSON data and set the 'cluster' option to true.
         try {
             loadedMapStyle.addSource(
-// Point to GeoJSON data. This example visualizes all M1.0+ earthquakes from
-// 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
                     new GeoJsonSource("earthquakes",
-                            new URI("asset://earthquakes.geojson"),
-                            new GeoJsonOptions()
-                                    .withCluster(true)
-                                    .withClusterMaxZoom(4)
-                                    .withClusterRadius(60)
+                            new URI("asset://earthquakes.geojson")
+//                            new GeoJsonOptions()
+//                                    .withCluster(false)
+//                                    .withClusterMaxZoom(100)
+//                                    .withClusterRadius(1)
                     )
             );
         } catch (URISyntaxException uriSyntaxException) {
             Timber.e("Check the URL %s", uriSyntaxException.getMessage());
         }
 
-//Creating a marker layer for single data points
         SymbolLayer unclustered = new SymbolLayer("unclustered-points", "earthquakes");
 
         unclustered.setProperties(
                 iconImage("cross-icon-id"),
                 iconSize(
-                        division(
-                                get("cases"), literal(4.0f)
+                        interpolate(exponential(1), get("cases"),
+                                stop(10000.0, 1),
+                                stop(50000.0, 2),
+                                stop(100000.0, 3)
                         )
                 ),
                 iconColor(
                         interpolate(exponential(1), get("cases"),
-                                stop(2.0, rgb(0, 255, 0)),
-                                stop(4, rgb(0, 0, 255)),
-                                stop(7.0, rgb(255, 0, 0))
+                                stop(10000.0, rgb(0, 255, 0)),
+                                stop(50000.0, rgb(0, 0, 255)),
+                                stop(100000.0, rgb(255, 0, 0))
                         )
                 )
         );
         unclustered.setFilter(has("cases"));
         loadedMapStyle.addLayer(unclustered);
 
-// Use the earthquakes GeoJSON source to create three layers: One layer for each cluster category.
-// Each point range gets a different fill color.
-        int[][] layers = new int[][] {
-                new int[] {7, ContextCompat.getColor(activity.getApplicationContext(), R.color.red)},
-                new int[] {4, ContextCompat.getColor(activity.getApplicationContext(), R.color.green)},
-                new int[] {0, ContextCompat.getColor(activity.getApplicationContext(), R.color.blue)}
-        };
-
-        for (int i = 0; i < layers.length; i++) {
-//Add clusters' circles
-            CircleLayer circles = new CircleLayer("cluster-" + i, "earthquakes");
-            circles.setProperties(
-                    circleColor(layers[i][1]),
-                    circleRadius(18f)
-            );
-
-            Expression pointCount = toNumber(get("point_count"));
+//        int[][] layers = new int[][] {
+//                new int[] {7, ContextCompat.getColor(activity.getApplicationContext(), R.color.red)},
+//                new int[] {4, ContextCompat.getColor(activity.getApplicationContext(), R.color.green)},
+//                new int[] {0, ContextCompat.getColor(activity.getApplicationContext(), R.color.blue)}
+//        };
+//
+//        for (int i = 0; i < layers.length; i++) {
+////Add clusters' circles
+//            CircleLayer circles = new CircleLayer("cluster-" + i, "earthquakes");
+//            circles.setProperties(
+//                    circleColor(layers[i][1]),
+//                    circleRadius(18f)
+//            );
+//
+////            Expression pointCount = toNumber(get("point_count"));
 //            Expression pointCount = toNumber(get("cases"));
-// Add a filter to the cluster layer that hides the circles based on "point_count"
-
-            circles.setFilter(
-                    i == 0
-                            ? all(has("point_count"),
-//                            ? all(has("cases"),
-                            gte(pointCount, literal(layers[i][0]))
-                    ) : all(has("point_count"),
-//                            ) : all(has("cases"),
-                            gte(pointCount, literal(layers[i][0])),
-                            lt(pointCount, literal(layers[i - 1][0]))
-                    )
-            );
-            loadedMapStyle.addLayer(circles);
-        }
+//// Add a filter to the cluster layer that hides the circles based on "point_count"
+//
+//            circles.setFilter(
+//                    i == 0
+//                            ? all(has("point_count"),
+////                            ? all(has("cases"),
+//                            gte(pointCount, literal(layers[i][0]))
+//                    ) : all(has("point_count"),
+////                            ) : all(has("cases"),
+//                            gte(pointCount, literal(layers[i][0])),
+//                            lt(pointCount, literal(layers[i - 1][0]))
+//                    )
+//            );
+//            //loadedMapStyle.addLayer(circles);
+//        }
 
 //Add the count labels
         SymbolLayer count = new SymbolLayer("count", "earthquakes");
@@ -272,5 +270,14 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View 
         System.out.println("Fragment");
     }
 
+
+    @Override
+    public boolean onMapClick(@NonNull LatLng point) {
+        PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
+        RectF rectF = new RectF(pointf.x - 10, pointf.y - 10, pointf.x + 10, pointf.y + 10);
+        Toast.makeText(activity, R.string.app_name,
+                Toast.LENGTH_SHORT).show();
+        return true;
+    }
 
 }
