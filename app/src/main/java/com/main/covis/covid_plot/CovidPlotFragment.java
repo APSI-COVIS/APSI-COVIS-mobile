@@ -169,6 +169,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                     System.out.println("0!!!");
                     break;
                 }
+                activeCasesDataSet.setDrawFilled(true);
                 mpLineChart.getData().addDataSet(activeCasesDataSet);
                 mpLineChart.getData().removeDataSet(0);
                 mpLineChart.notifyDataSetChanged();
