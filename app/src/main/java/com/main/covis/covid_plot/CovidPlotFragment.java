@@ -10,20 +10,25 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.main.covis.R;
 
 public class CovidPlotFragment extends Fragment implements CovidPlotContract.View {
 
     private CovidPlotPresenter presenter;
     TextView homeText;
-
+    BottomNavigationView bottomNavigationView;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         homeText = getActivity().findViewById(R.id.homeText);
         Bundle bundle=getArguments();
-        System.out.println(bundle.getString("country"));
+        if(bundle != null) {
+            bottomNavigationView = getActivity().findViewById(R.id.bottom_navigation);
+            bottomNavigationView.setSelectedItemId(R.id.details);
+            System.out.println(bundle.getString("country"));
+        }
         return inflater.inflate(R.layout.fragment_details, container, false);
     }
 
