@@ -9,14 +9,81 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/homeText"
-            android:text="@string/plot_button"
-            android:layout_centerVertical="true"
-            android:layout_centerHorizontal="true"/>
 
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical"
+            android:layout_gravity="bottom"
+            android:weightSum="100">
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:layout_weight="10"
+                android:background="@android:color/white"
+                android:orientation="horizontal"
+                android:tileMode="repeat" >
+
+                <Spinner
+                    android:id="@+id/spinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/holo_blue_bright"
+                    android:
+                    android:layout_marginVertical="10dp"
+                    android:layout_marginHorizontal="5dp"
+                    android:popupBackground="@android:color/holo_blue_bright"/>
+
+<!--                <Button-->
+<!--                    android:id="@+id/plot_button"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="@string/plot_button" />-->
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/countryName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/country_name"
+                    android:textColor="@android:color/holo_blue_bright"
+                    android:textSize="25dp"
+                    android:layout_marginVertical="10dp"
+                    android:layout_marginHorizontal="5dp">
+                </TextView>
+
+                <TextView
+                    android:id="@+id/population"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/population"
+                    android:textColor="@android:color/holo_blue_bright"
+                    android:textSize="20dp"
+                    android:layout_marginVertical="10dp"
+                    android:layout_marginHorizontal="5dp">
+                </TextView>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:layout_weight="90"
+                android:orientation="horizontal"
+                android:tileMode="repeat" >
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/line_chart"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </LinearLayout>
+            <View
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:layout_weight="0" />
+        </LinearLayout>
 
 
     </RelativeLayout>

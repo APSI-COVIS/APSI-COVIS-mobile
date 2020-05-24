@@ -2,6 +2,9 @@
     <string name="app_name">COVIS</string>
     <string name="mapbox_access_token">pk.eyJ1Ijoid29ybGRtYXN0ZXIiLCJhIjoiY2thNWRoOG9xMDA0cjNlcWdqem1pODdtYyJ9.AiyXb9MMtRQEafRchApA9w</string>
     <string name="home_button">HOME</string>
-    <string name="plot_button">DETAILS</string>
-    
+    <string name="details_button">DETAILS</string>
+    <string name="plot">Plot</string>
+    <string name="plot_button">Show</string>
+    <string name="country_name">Poland</string>
+    <string name="population">37,97 mln</string>
 </resources>

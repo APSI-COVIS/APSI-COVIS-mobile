@@ -9,5 +9,5 @@
         android:id="@+id/details"
         android:enabled="true"
         android:icon="@drawable/ic_plot"
-        android:title="@string/plot_button"/>
+        android:title="@string/details_button"/>
 </menu>
