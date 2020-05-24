@@ -1,21 +1,23 @@
 package com.main.covis.covid_map;
 
-import androidx.fragment.app.Fragment;
-
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
-import com.main.covis.R;
-
-import android.graphics.Color;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.main.covis.R;
+import com.main.covis.covid_plot.CovidPlotFragment;
 import com.main.covis.main.MainActivity;
+import com.mapbox.geojson.Feature;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -24,49 +26,29 @@ import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
-import com.mapbox.mapboxsdk.style.layers.CircleLayer;
 import com.mapbox.mapboxsdk.style.layers.FillLayer;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
-import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Objects;
-
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-
-import org.w3c.dom.Text;
 
 import timber.log.Timber;
 
-import static com.mapbox.mapboxsdk.style.expressions.Expression.all;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.any;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.division;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.gte;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.has;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.lt;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.rgb;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.sum;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleTranslate;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconTextFit;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
@@ -81,6 +63,8 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     private MapboxMap mapboxMap;
     private MainActivity activity;
     private CovidMapPresenter presenter;
+    private static final String geoJsonSourceId = "earthquakes";
+    private static final String geoJsonLayerId = "polygonFillLayer";
 
 
 
@@ -126,6 +110,10 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
                                 Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.ic_circle))),
                                 true
                         );
+                        if (style != null) {
+                            style.addLayer(new FillLayer(geoJsonLayerId, geoJsonSourceId)
+                                    .withProperties(fillOpacity(0.5f)));
+                        }
 
                         Toast.makeText(activity, R.string.app_name,
                                 Toast.LENGTH_SHORT).show();
@@ -143,7 +131,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
         try {
             loadedMapStyle.addSource(
-                    new GeoJsonSource("earthquakes",
+                    new GeoJsonSource(geoJsonSourceId,
                             new URI("asset://earthquakes.geojson")
 //                            new GeoJsonOptions()
 //                                    .withCluster(false)
@@ -155,7 +143,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
             Timber.e("Check the URL %s", uriSyntaxException.getMessage());
         }
 
-        SymbolLayer unclustered = new SymbolLayer("unclustered-points", "earthquakes");
+        SymbolLayer unclustered = new SymbolLayer("unclustered-points", geoJsonSourceId);
 
         unclustered.setProperties(
                 iconImage("cross-icon-id"),
@@ -177,42 +165,8 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
         unclustered.setFilter(has("cases"));
         loadedMapStyle.addLayer(unclustered);
 
-//        int[][] layers = new int[][] {
-//                new int[] {7, ContextCompat.getColor(activity.getApplicationContext(), R.color.red)},
-//                new int[] {4, ContextCompat.getColor(activity.getApplicationContext(), R.color.green)},
-//                new int[] {0, ContextCompat.getColor(activity.getApplicationContext(), R.color.blue)}
-//        };
-//
-//        for (int i = 0; i < layers.length; i++) {
-////Add clusters' circles
-//            CircleLayer circles = new CircleLayer("cluster-" + i, "earthquakes");
-//            circles.setProperties(
-//                    circleColor(layers[i][1]),
-//                    circleRadius(18f)
-//            );
-//
-////            Expression pointCount = toNumber(get("point_count"));
-//            Expression pointCount = toNumber(get("cases"));
-//// Add a filter to the cluster layer that hides the circles based on "point_count"
-//
-//            circles.setFilter(
-//                    i == 0
-//                            ? all(has("point_count"),
-////                            ? all(has("cases"),
-//                            gte(pointCount, literal(layers[i][0]))
-//                    ) : all(has("point_count"),
-////                            ) : all(has("cases"),
-//                            gte(pointCount, literal(layers[i][0])),
-//                            lt(pointCount, literal(layers[i - 1][0]))
-//                    )
-//            );
-//            //loadedMapStyle.addLayer(circles);
-//        }
-
-//Add the count labels
         SymbolLayer count = new SymbolLayer("count", "earthquakes");
         count.setProperties(
-                //textField(Expression.toString(get("point_count"))),
                 textField(Expression.toString(get("cases"))),
                 textSize(12f),
                 textColor(Color.WHITE),
@@ -275,9 +229,24 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     public boolean onMapClick(@NonNull LatLng point) {
         PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
         RectF rectF = new RectF(pointf.x - 10, pointf.y - 10, pointf.x + 10, pointf.y + 10);
-        Toast.makeText(activity, R.string.app_name,
-                Toast.LENGTH_SHORT).show();
-        return true;
+        List<Feature> featureList = mapboxMap.queryRenderedFeatures(rectF, geoJsonLayerId);
+        if (featureList.size() > 0) {
+            for (Feature feature : featureList) {
+                //Timber.d("Feature found with %1$s", feature.toJson());
+                Toast.makeText(activity, feature.getStringProperty("country"),
+                        Toast.LENGTH_SHORT).show();
+
+                FragmentTransaction transection=getFragmentManager().beginTransaction();
+                CovidPlotFragment mfragment=new CovidPlotFragment();
+                Bundle bundle=new Bundle();
+                bundle.putString("country",feature.getStringProperty("country"));
+                mfragment.setArguments(bundle); //data being send to SecondFragment
+                transection.replace(R.id.container, mfragment);
+                transection.commit();
+            }
+            return true;
+        }
+        return false;
     }
 
 }

@@ -22,6 +22,8 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         homeText = getActivity().findViewById(R.id.homeText);
+        Bundle bundle=getArguments();
+        System.out.println(bundle.getString("country"));
         return inflater.inflate(R.layout.fragment_details, container, false);
     }
 
