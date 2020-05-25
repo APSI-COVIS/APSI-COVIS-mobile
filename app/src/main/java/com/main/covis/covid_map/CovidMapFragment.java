@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,18 +37,20 @@ import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.FillLayer;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
+import okhttp3.Response;
 import retrofit2.Call;
 import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import timber.log.Timber;
 
@@ -61,6 +64,7 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.symbolZOrder;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
@@ -77,8 +81,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     private CovidMapPresenter presenter;
     private static final String geoJsonSourceId = "earthquakes";
     private static final String geoJsonLayerId = "polygonFillLayer";
-    Response geoJson;
-
+    JsonObject geoJson;
 
 
     @Override
@@ -96,89 +99,105 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
 
 
-        Retrofit retrofit = ApiClient.getClient();
-        ApiService apiService = retrofit.create(ApiService.class);
-        Call call = apiService.getCovidData("2020-05-25", "ACTIVE");
+        int SDK_INT = android.os.Build.VERSION.SDK_INT;
+        if (SDK_INT > 8)
+        {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                    .permitAll().build();
+            StrictMode.setThreadPolicy(policy);
 
-        if(call !=null)
-            System.out.println("haha" + call);
-        call.enqueue(new Callback() {
-            @Override
-            public void onResponse(Call call, Response response) {
-                if( response.body() !=null){
-                    geoJson = response;
-                    System.out.println("siema" + response.body());
-                }
-                else
-                    System.out.println("nara" + response.toString());
+            super.onViewCreated(view, savedInstanceState);
+
+
+            Retrofit retrofit = ApiClient.getClient();
+            ApiService apiService = retrofit.create(ApiService.class);
+            Call<JsonObject> call = apiService.getCovidData("2020-05-25", "ACTIVE");
+            try {
+                geoJson= call.execute().body();
+                System.out.println("test" + geoJson);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+    //        call.enqueue(new Callback() {
+    //            @Override
+    //            public void onResponse(Call call, Response response) {
+    //                if( response.body() !=null){
+    //                    geoJson = response;
+    //                    System.out.println("siema" + response.body());
+    //                }
+    //                else
+    //                    System.out.println("nara" + response.toString());
+    //            }
+    //
+    //            @Override
+    //            public void onFailure(Call call, Throwable t) {
+    //                System.out.println("ERROR");
+    //            }
+    //        });
 
-            @Override
-            public void onFailure(Call call, Throwable t) {
-                System.out.println("ERROR");
-            }
-        });
+            mapView = activity.findViewById(R.id.mapView);
 
-        mapView = activity.findViewById(R.id.mapView);
+            mapView.onCreate(savedInstanceState);
 
-        mapView.onCreate(savedInstanceState);
+            mapView.getMapAsync(new OnMapReadyCallback() {
+                @Override
+                public void onMapReady(@NonNull MapboxMap map) {
 
-        mapView.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(@NonNull MapboxMap map) {
+                    mapboxMap = map;
 
-                mapboxMap = map;
-
-                map.setStyle(Style.LIGHT, new Style.OnStyleLoaded() {
-                    @Override
-                    public void onStyleLoaded(@NonNull Style style) {
+                    map.setStyle(Style.LIGHT, new Style.OnStyleLoaded() {
+                        @Override
+                        public void onStyleLoaded(@NonNull Style style) {
 
 
-                        style.setTransition(new TransitionOptions(0, 0, false));
+                            style.setTransition(new TransitionOptions(0, 0, false));
 
-                        mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
-                                51.919438, 19.145136), 3));
-                        addClusteredGeoJsonSource(style);
-                        style.addImage(
-                                "cross-icon-id",
-                                Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.ic_circle))),
-                                true
-                        );
-                        if (style != null) {
-                            style.addLayer(new FillLayer(geoJsonLayerId, geoJsonSourceId)
-                                    .withProperties(fillOpacity(0.5f)));
+        //                    mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
+        //                            51.919438, 19.145136), 3));
+                            mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
+                                    30.5,
+                                    -40.5), 3));
+
+                            addClusteredGeoJsonSource(style);
+                            style.addImage(
+                                    "cross-icon-id",
+                                    Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.ic_circle))),
+                                    true
+                            );
+                            if (style != null) {
+                                style.addLayer(new FillLayer(geoJsonLayerId, geoJsonSourceId)
+                                        .withProperties(fillOpacity(0.5f)));
+                            }
+
+                            Toast.makeText(activity, R.string.app_name,
+                                    Toast.LENGTH_SHORT).show();
                         }
-
-                        Toast.makeText(activity, R.string.app_name,
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-                map.addOnMapClickListener(CovidMapFragment.this);
-            }
-        });
-
-
+                    });
+                    map.addOnMapClickListener(CovidMapFragment.this);
+                }
+            });
+        }
     }
 
 
     private void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
-        try {
+        System.out.println("przed");
+//        try {
             loadedMapStyle.addSource(
-//                    new GeoJsonSource(geoJson.toString()
-                    new GeoJsonSource(geoJsonSourceId,
-                            new URI("asset://earthquakes.geojson")
-//                            new GeoJsonOptions()
-//                                    .withCluster(false)
-//                                    .withClusterMaxZoom(100)
-//                                    .withClusterRadius(1)
+                    new GeoJsonSource(geoJsonSourceId, String.valueOf(geoJson),
+//                    new GeoJsonSource(geoJsonSourceId,
+//                            new URI("asset://epidemy-info.json"),
+                            new GeoJsonOptions()
+                                    .withCluster(false)
+                                    .withClusterMaxZoom(100)
+                                    .withClusterRadius(1)
                     )
             );
-        } catch (URISyntaxException uriSyntaxException) {
-            Timber.e("Check the URL %s", uriSyntaxException.getMessage());
-        }
+//        } catch (URISyntaxException uriSyntaxException) {
+//            Timber.e("Check the URL %s", uriSyntaxException.getMessage());
+//        }
 
         SymbolLayer unclustered = new SymbolLayer("unclustered-points", geoJsonSourceId);
 
@@ -270,13 +289,13 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
         if (featureList.size() > 0) {
             for (Feature feature : featureList) {
                 //Timber.d("Feature found with %1$s", feature.toJson());
-                Toast.makeText(activity, feature.getStringProperty("country"),
+                Toast.makeText(activity, feature.getStringProperty("country-slug"),
                         Toast.LENGTH_SHORT).show();
 
                 FragmentTransaction transection=getFragmentManager().beginTransaction();
                 CovidPlotFragment mfragment=new CovidPlotFragment();
                 Bundle bundle=new Bundle();
-                bundle.putString("country",feature.getStringProperty("country"));
+                bundle.putString("country",feature.getStringProperty("country-slug"));
                 mfragment.setArguments(bundle); //data being send to SecondFragment
                 transection.replace(R.id.container, mfragment);
                 transection.commit();
