@@ -14,10 +14,17 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.main.covis.R;
 import com.main.covis.covid_plot.CovidPlotFragment;
 import com.main.covis.main.MainActivity;
+import com.main.covis.network.ApiClient;
+import com.main.covis.network.ApiService;
+import com.mapbox.geojson.BoundingBox;
 import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.GeoJson;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -32,11 +39,16 @@ import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 import timber.log.Timber;
 
 import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
@@ -65,6 +77,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     private CovidMapPresenter presenter;
     private static final String geoJsonSourceId = "earthquakes";
     private static final String geoJsonLayerId = "polygonFillLayer";
+    Response geoJson;
 
 
 
@@ -85,9 +98,34 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+
+        Retrofit retrofit = ApiClient.getClient();
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call call = apiService.getCovidData("2020-05-25", "ACTIVE");
+
+        if(call !=null)
+            System.out.println("haha" + call);
+        call.enqueue(new Callback() {
+            @Override
+            public void onResponse(Call call, Response response) {
+                if( response.body() !=null){
+                    geoJson = response;
+                    System.out.println("siema" + response.body());
+                }
+                else
+                    System.out.println("nara" + response.toString());
+            }
+
+            @Override
+            public void onFailure(Call call, Throwable t) {
+                System.out.println("ERROR");
+            }
+        });
+
         mapView = activity.findViewById(R.id.mapView);
 
         mapView.onCreate(savedInstanceState);
+
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(@NonNull MapboxMap map) {
@@ -103,7 +141,6 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
                         mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
                                 51.919438, 19.145136), 3));
-
                         addClusteredGeoJsonSource(style);
                         style.addImage(
                                 "cross-icon-id",
@@ -128,9 +165,9 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
 
     private void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
-
         try {
             loadedMapStyle.addSource(
+//                    new GeoJsonSource(geoJson.toString()
                     new GeoJsonSource(geoJsonSourceId,
                             new URI("asset://earthquakes.geojson")
 //                            new GeoJsonOptions()

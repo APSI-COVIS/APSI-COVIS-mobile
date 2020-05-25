@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:style="http://schemas.android.com/apk/res-auto"
     tools:context=".covid_plot.CovidPlotFragment">
 
     <RelativeLayout
@@ -27,12 +27,20 @@
 
                 <Spinner
                     android:id="@+id/spinner"
+                    android:layout_height="wrap_content"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/holo_blue_bright"
-                    android:layout_marginVertical="10dp"
-                    android:layout_marginHorizontal="5dp"
-                    android:popupBackground="@android:color/holo_blue_bright"/>
+                    style="@style/Widget.AppCompat.Light.DropDownItem.Spinner"
+
+                    />
+<!--                android:background="@drawable/spinner_background"-->
+<!--                    android:theme="@style/spinner_style"-->
+                    />
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="match_parent"-->
+<!--                    android:background="@android:color/holo_blue_bright"-->
+<!--                    android:layout_marginVertical="10dp"-->
+<!--                    android:layout_marginHorizontal="5dp"-->
+<!--                    android:popupBackground="@android:color/holo_blue_bright"/>-->
 
 <!--                <Button-->
 <!--                    android:id="@+id/plot_button"-->
