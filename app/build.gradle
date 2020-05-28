@@ -44,4 +44,7 @@ dependencies {
 
     //Timber
     implementation 'com.jakewharton.timber:timber:4.7.1'
+
+    //iTextpdf
+    implementation 'com.itextpdf:itextg:5.5.10'
 }

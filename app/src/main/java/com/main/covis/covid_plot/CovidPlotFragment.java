@@ -1,5 +1,6 @@
 package com.main.covis.covid_plot;
 
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -7,17 +8,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -25,19 +22,25 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IAxisValueFormatter;
-import com.github.mikephil.charting.formatter.IValueFormatter;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.utils.ViewPortHandler;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.main.covis.R;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
-import java.util.Map;
+
 
 public class CovidPlotFragment extends Fragment implements CovidPlotContract.View, AdapterView.OnItemSelectedListener {
 
@@ -75,7 +78,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         ArrayList<ILineDataSet> dataSets = new ArrayList<>();
         dataSets.add(activeDataSet);
 
-        mpLineChart.setBackgroundColor(Color.TRANSPARENT);
+        mpLineChart.setBackgroundColor(Color.rgb(253,253,253));
         mpLineChart.setDrawGridBackground(false);
         mpLineChart.getXAxis().setDrawGridLines(false);
         mpLineChart.setDrawBorders(true);
@@ -181,6 +184,30 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                 mpLineChart.getData().removeDataSet(0);
                 mpLineChart.notifyDataSetChanged();
                 mpLineChart.invalidate();
+
+                //export to pdf
+                Bitmap bm = mpLineChart.getChartBitmap();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bm.compress(Bitmap.CompressFormat.JPEG, 80 , stream);
+                Document doc = new Document();
+                try {
+                    String filePath = "/storage/emulated/0/Download" + "/ImageDemo.pdf";
+                    System.out.println("dawaj" + getActivity().getFilesDir().getPath().toString());
+                    PdfWriter.getInstance(doc, new FileOutputStream( filePath));
+                    doc.open();
+                    doc.add(new Chunk("XD"));
+                    Image image = Image.getInstance(stream.toByteArray());
+                    float scaler = ((doc.getPageSize().getWidth() - doc.leftMargin()
+                            - doc.rightMargin() - 0) / image.getWidth()) * 100;
+                    image.scalePercent(scaler);
+                    image.setAlignment(Image.ALIGN_CENTER | Image.ALIGN_TOP);
+                    doc.add(image);
+                } catch (DocumentException | IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    doc.close();
+                }
+
                 break;
             case 1:
                 LineDataSet newCasesDataSet = new LineDataSet(dataValues2(), "New Cases");
