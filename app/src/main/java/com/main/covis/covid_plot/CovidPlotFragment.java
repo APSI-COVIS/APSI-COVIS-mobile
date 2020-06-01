@@ -1,6 +1,7 @@
 package com.main.covis.covid_plot;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,6 +18,10 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 
+import com.github.mikephil.charting.components.IMarker;
+import com.github.mikephil.charting.components.MarkerView;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.utils.MPPointF;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
@@ -78,7 +83,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         WHOLE_PERIOD (90, "Whole Period"),
         MONTH (30, "Week"),
         WEEK (7, "Month"),
-        FORECAST(-7, "Forecast");
+        FORECAST(14, "Forecast");
         private final int days;
         private final String label;
         DateRange(int days, String label){
@@ -94,10 +99,10 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             return labels;
         }
     }
-    private CovidCasesType TYPE = CovidCasesType.ACTIVE;
-    private DateRange DATERANGE = DateRange.WHOLE_PERIOD;
-    private CovidCasesType newTYPE = CovidCasesType.ACTIVE;
-    private DateRange newDATERANGE = DateRange.WHOLE_PERIOD;
+    private static CovidCasesType TYPE = CovidCasesType.ACTIVE;
+    private static DateRange DATERANGE = DateRange.WHOLE_PERIOD;
+    private static CovidCasesType newTYPE = CovidCasesType.ACTIVE;
+    private static DateRange newDATERANGE = DateRange.WHOLE_PERIOD;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -121,13 +126,15 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                 BottomNavigationView bottomNavigationView = Objects.requireNonNull(getActivity()).findViewById(R.id.bottom_navigation);
                 bottomNavigationView.setSelectedItemId(R.id.details);
                 System.out.println(bundle.getString("country"));
+
+                TextView country = (TextView) rootView.findViewById(R.id.country_name);
+                assert bundle != null;
+                country.setText(bundle.getString("country"));
+                TextView population = (TextView) rootView.findViewById(R.id.population);
+                population.setText(getPopulation(bundle.getString("country")));
             }
 
-//            TextView country = (TextView) rootView.findViewById(R.id.country_name);
-//            assert bundle != null;
-//            country.setText(bundle.getString("country"));
-//            TextView population = (TextView) rootView.findViewById(R.id.population);
-//            population.setText(getPopulation(bundle.getString("country")));
+
 
             Spinner typeSpin = (Spinner) rootView.findViewById(R.id.typeSpinner);
             typeSpin.setOnItemSelectedListener((AdapterView.OnItemSelectedListener) this);
@@ -150,7 +157,8 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
 
 
             mpLineChart = (LineChart) rootView.findViewById(R.id.line_chart);
-            LineDataSet activeDataSet = new LineDataSet(getCovidData(CovidCasesType.ACTIVE, DateRange.WHOLE_PERIOD), CovidCasesType.ACTIVE.label);
+            LineDataSet activeDataSet = new LineDataSet(getCovidData(DateRange.WHOLE_PERIOD), CovidCasesType.ACTIVE.label);
+            activeDataSet.setDrawValues(false);
             activeDataSet.setColor(Color.RED);
             activeDataSet.setDrawFilled(true);
             ArrayList<ILineDataSet> dataSets = new ArrayList<>();
@@ -175,16 +183,20 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
             xAxis.setValueFormatter(new DateAxisValueFormatter());
             xAxis.setGranularityEnabled(true);
-            //xAxis.setGranularity(1);
+            xAxis.setGranularity(1);
             //xAxis.setLabelCount(8);
             YAxis yAxisLeft = mpLineChart.getAxisLeft();
             yAxisLeft.setAxisMinimum(0);
             YAxis yAxisRight = mpLineChart.getAxisRight();
             yAxisRight.setAxisMinimum(0);
 
+            mpLineChart.setTouchEnabled(true);
+            IMarker marker = new MyMarkerView(rootView.getContext(), R.layout.custom_marker_view_layout);
+            mpLineChart.setMarker(marker);
 
             mpLineChart.notifyDataSetChanged();
             mpLineChart.invalidate();
+            System.out.println("KAPPA");
 
         }
         return rootView;
@@ -193,18 +205,18 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     private String getPopulation(String cSlug) {
         System.out.println("TEST: !!!");
         int population = 39423121;
-        Retrofit retrofit = ApiClient.getClient();
-        ApiService apiService = retrofit.create(ApiService.class);
-        //Call<JsonObject> call = apiService.getListEpidemyDataInCountry("POL", "2020-05-15", "2020-05-24", "ACTIVE");
-        Call<JsonObject> call = apiService.getCountryPopulation(cSlug, "2020-05-24");
-        //Call<JsonObject> call = apiService.getListEpidemyForecastInCountry("POL", "2020-05-15", "2020-05-24", "ACTIVE");
-        try {
-            JsonObject json = call.execute().body();
-            System.out.println("TEST: " + json);
-        } catch (IOException e) {
-            System.out.println("TEST: !");
-            e.printStackTrace();
-        }
+//        Retrofit retrofit = ApiClient.getClient();
+//        ApiService apiService = retrofit.create(ApiService.class);
+//        //Call<JsonObject> call = apiService.getListEpidemyDataInCountry("POL", "2020-05-15", "2020-05-24", "ACTIVE");
+//        Call<JsonObject> call = apiService.getCountryPopulation(cSlug, "2020-05-24");
+//        //Call<JsonObject> call = apiService.getListEpidemyForecastInCountry("POL", "2020-05-15", "2020-05-24", "ACTIVE");
+//        try {
+//            JsonObject json = call.execute().body();
+//            System.out.println("TEST: " + json);
+//        } catch (IOException e) {
+//            System.out.println("TEST: !");
+//            e.printStackTrace();
+//        }
             System.out.println("TEST: !!!!");
             return String.format("%.2fM", population/ 1000000.0);
     }
@@ -214,6 +226,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         //Toast.makeText(Objects.requireNonNull(getActivity()).getApplicationContext(),country[position] , Toast.LENGTH_LONG).show();
+        System.out.println("KAPPA0");
         if(parent.getId() == R.id.typeSpinner)
         {
             typeSpinnerHandler(position);
@@ -223,18 +236,22 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             dateSpinnerHandler(position);
         }
         if(newDATERANGE == DATERANGE && newTYPE==TYPE){
+            System.out.println("KAPPA1");
             return;
         } else{
+            System.out.println("KAPPA2");
             DATERANGE = newDATERANGE;
             TYPE=newTYPE;
         }
-        LineDataSet dataSet = new LineDataSet((DATERANGE!=DateRange.FORECAST) ? getCovidData(TYPE, DATERANGE) : getForecastCovidData(TYPE), TYPE.label);
+        System.out.println("KAPPA3");
+        LineDataSet dataSet = new LineDataSet( getCovidData(DATERANGE), TYPE.label);
         dataSet.setColor(Color.rgb(220,20, 20));
         dataSet.setDrawFilled(true);
         mpLineChart.getData().addDataSet(dataSet);
         mpLineChart.getData().removeDataSet(0);
         mpLineChart.notifyDataSetChanged();
         mpLineChart.invalidate();
+        System.out.println("KAPPA4");
     }
 
     private void typeSpinnerHandler(int position) {
@@ -284,50 +301,30 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         @Override
         public String getFormattedValue(float value) {
             int intValue = (int) value;
-            return String.valueOf(intValue);
+            return "";
         }
     }
 
     static class DateAxisValueFormatter extends ValueFormatter implements IAxisValueFormatter {
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public String getFormattedValue(float value) {
-            String date = Float.toString(value);
-            System.out.println(date);
-            date = date.substring(1,3) + "/" + date.substring(3,5);
-            System.out.println(date);
-//            date = new StringBuilder(date).insert(date.length()-2, "/").toString();
-            return date;
-//            Date date = new Date((long)value);
-//            System.out.println(date);
-//            //Specify the format you'd like
-//            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd", Locale.ENGLISH);
-//            return sdf.format(date);
+            LocalDate now = LocalDate.now();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd");
+            System.out.println(dtf.format(now.plusDays((int) -value)));
+            return dtf.format(now.plusDays( (int)value -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 7)));
         }
     }
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private ArrayList<Entry> getCovidData (CovidCasesType type, DateRange range){
+    private ArrayList<Entry> getCovidData (DateRange range){
         ArrayList<Entry> dataVals = new ArrayList<Entry>();
-        LocalDate now = LocalDate.now();
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("1MMdd");
         for(int i = 0; i < range.days; i++){
-            dataVals.add(new Entry(Float.parseFloat(dtf.format(now.plusDays(i-range.days))), new Random().nextInt((i*100 - i*10) + 1) + i*10));
+            System.out.println(i + " / " + range.days);
+            dataVals.add(new Entry(i, new Random().nextInt((100 - 10) + 1) + 10));
         }
-        System.out.println(type + " : " + range.days);
-        return dataVals;
-    }
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private ArrayList<Entry> getForecastCovidData(CovidCasesType type){
-        ArrayList<Entry> dataVals = new ArrayList<Entry>();
-        LocalDate now = LocalDate.now();
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("1MMdd");
-        for(int i = -7; i < 7; i++){
-            dataVals.add(new Entry(Float.parseFloat(dtf.format(now.plusDays(i))), new Random().nextInt(((i+7)*100 - (i+7)*10) + 1) + (i+7)*10));
-        }
-        System.out.println(type);
-
         return dataVals;
     }
 
@@ -335,4 +332,42 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     public void showMessage(String message) {
         System.out.println("Plot Fragment");
     }
+
+    public class MyMarkerView extends MarkerView {
+
+        private TextView tvContent;
+
+        public MyMarkerView(Context context, int layoutResource) {
+            super(context, layoutResource);
+
+            // find your layout components
+            tvContent = (TextView) findViewById(R.id.tvContent);
+        }
+
+        // callbacks everytime the MarkerView is redrawn, can be used to update the
+// content (user-interface)
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        @Override
+        public void refreshContent(Entry e, Highlight highlight) {
+            LocalDate now = LocalDate.now();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd");
+            tvContent.setText( dtf.format(now.plusDays( (int)e.getX() -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 7))) + "\n" + (int)e.getY());
+
+            // this will perform necessary layouting
+            super.refreshContent(e, highlight);
+        }
+
+        private MPPointF mOffset;
+
+        @Override
+        public MPPointF getOffset() {
+
+            if(mOffset == null) {
+                // center the marker horizontally and vertically
+                mOffset = new MPPointF(-(getWidth() / 2), -getHeight());
+            }
+
+            return mOffset;
+        }}
+
 }
