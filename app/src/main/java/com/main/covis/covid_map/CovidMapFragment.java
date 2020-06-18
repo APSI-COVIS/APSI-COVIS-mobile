@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.view.LayoutInflater;
@@ -12,20 +13,19 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.google.gson.Gson;
+import com.github.jhonnyx2012.horizontalpicker.DatePickerListener;
+import com.github.jhonnyx2012.horizontalpicker.HorizontalPicker;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.main.covis.R;
 import com.main.covis.covid_plot.CovidPlotFragment;
 import com.main.covis.main.MainActivity;
 import com.main.covis.network.ApiClient;
 import com.main.covis.network.ApiService;
-import com.mapbox.geojson.BoundingBox;
 import com.mapbox.geojson.Feature;
-import com.mapbox.geojson.GeoJson;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -41,30 +41,34 @@ import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
-import java.io.FileWriter;
+import org.joda.time.DateTime;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
-import okhttp3.Response;
 import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Retrofit;
 import timber.log.Timber;
 
+import static com.mapbox.mapboxsdk.style.expressions.Expression.distance;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.division;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.has;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.rgb;
 import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.zoom;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.symbolZOrder;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
@@ -82,8 +86,9 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     private static final String geoJsonSourceId = "earthquakes";
     private static final String geoJsonLayerId = "polygonFillLayer";
     JsonObject geoJson;
-
-
+    private Retrofit retrofit;
+    private ApiService apiService;
+    private Call<JsonObject> call;
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -110,16 +115,51 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
             super.onViewCreated(view, savedInstanceState);
 
-
-            Retrofit retrofit = ApiClient.getClient();
-            ApiService apiService = retrofit.create(ApiService.class);
-            Call<JsonObject> call = apiService.getCovidData("2020-05-25", "ACTIVE");
+            retrofit = ApiClient.getClient();
+            apiService = retrofit.create(ApiService.class);
+            call = apiService.getCovidData("2020-06-01", "ACTIVE");//formattedDate
             try {
                 geoJson= call.execute().body();
                 System.out.println("test" + geoJson);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            HorizontalPicker picker = (HorizontalPicker) activity.findViewById(R.id.datePicker);
+            picker.setListener(new DatePickerListener() {
+                @RequiresApi(api = Build.VERSION_CODES.O)
+                @Override
+                public void onDateSelected(DateTime dateSelected) {
+                    int month = dateSelected.getMonthOfYear();
+                    int day = dateSelected.getDayOfMonth();
+                    String formattedDate = String.valueOf(dateSelected.getYear()) +
+                            '-' +
+                            ( month >10 ? String.valueOf(month) :('0'+String.valueOf(month))) +
+                            '-' +
+                            ( day >10 ? String.valueOf(day) :('0'+String.valueOf(day)));
+                    Toast.makeText(activity, formattedDate,
+                            Toast.LENGTH_SHORT).show();
+                    System.out.println("formatteddata" + formattedDate);
+                    call = apiService.getCovidData((String)formattedDate, "ACTIVE");
+
+                    try {
+                        geoJson= call.execute().body();
+                        System.out.println("test" + geoJson);
+                        GeoJsonSource geoJsonSource = mapboxMap.getStyle().getSourceAs(geoJsonSourceId);
+                        if(geoJsonSource !=null ){
+                            geoJsonSource.setGeoJson(String.valueOf(geoJson));
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }).setDays(190)
+                    .setOffset(180)
+                    .init();
+            picker.setDate(new DateTime());
+
+
+
     //        call.enqueue(new Callback() {
     //            @Override
     //            public void onResponse(Call call, Response response) {
@@ -154,15 +194,12 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
                             style.setTransition(new TransitionOptions(0, 0, false));
 
-        //                    mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
-        //                            51.919438, 19.145136), 3));
                             mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
-                                    30.5,
-                                    -40.5), 3));
+                                    51.919438, 19.145136), 2.6));
 
                             addClusteredGeoJsonSource(style);
                             style.addImage(
-                                    "cross-icon-id",
+                                    "circle-icon",
                                     Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.ic_circle))),
                                     true
                             );
@@ -179,20 +216,21 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
                 }
             });
         }
+
     }
 
 
     private void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
-        System.out.println("przed");
+
 //        try {
             loadedMapStyle.addSource(
                     new GeoJsonSource(geoJsonSourceId, String.valueOf(geoJson),
 //                    new GeoJsonSource(geoJsonSourceId,
-//                            new URI("asset://epidemy-info.json"),
+//                            new URI("asset://earthquakes.geojson"),
                             new GeoJsonOptions()
                                     .withCluster(false)
-                                    .withClusterMaxZoom(100)
-                                    .withClusterRadius(1)
+//                                    .withClusterMaxZoom(2)
+//                                    .withClusterRadius(1)
                     )
             );
 //        } catch (URISyntaxException uriSyntaxException) {
@@ -200,14 +238,17 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 //        }
 
         SymbolLayer unclustered = new SymbolLayer("unclustered-points", geoJsonSourceId);
-
         unclustered.setProperties(
-                iconImage("cross-icon-id"),
+                iconImage("circle-icon"),
                 iconSize(
-                        interpolate(exponential(1), get("cases"),
-                                stop(10000.0, 1),
-                                stop(50000.0, 2),
-                                stop(100000.0, 3)
+//                        interpolate(exponential(1), get("cases"),
+//                                stop(10000, 1),
+//                                stop(50000, 2),
+//                                stop(100000, 3)
+                        interpolate(exponential(1),zoom(),
+                                stop(1f, 0.5),
+                                stop(2f, 1.2),
+                                stop(3f, 2.2)
                         )
                 ),
                 iconColor(
@@ -216,21 +257,20 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
                                 stop(50000.0, rgb(0, 0, 255)),
                                 stop(100000.0, rgb(255, 0, 0))
                         )
-                )
-        );
-        unclustered.setFilter(has("cases"));
-        loadedMapStyle.addLayer(unclustered);
-
-        SymbolLayer count = new SymbolLayer("count", "earthquakes");
-        count.setProperties(
+                ),
+                iconAllowOverlap(true),
+                iconIgnorePlacement(true),
+                iconOpacity((float) 0.9),
                 textField(Expression.toString(get("cases"))),
                 textSize(12f),
                 textColor(Color.WHITE),
                 textIgnorePlacement(true),
                 textAllowOverlap(true)
         );
-        loadedMapStyle.addLayer(count);
+
+        loadedMapStyle.addLayer(unclustered);
     }
+
 
     @Override
     public void onStart() {
@@ -284,7 +324,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
     @Override
     public boolean onMapClick(@NonNull LatLng point) {
         PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
-        RectF rectF = new RectF(pointf.x - 10, pointf.y - 10, pointf.x + 10, pointf.y + 10);
+        RectF rectF = new RectF(pointf.x - 20, pointf.y - 20, pointf.x + 20, pointf.y + 20);
         List<Feature> featureList = mapboxMap.queryRenderedFeatures(rectF, geoJsonLayerId);
         if (featureList.size() > 0) {
             for (Feature feature : featureList) {

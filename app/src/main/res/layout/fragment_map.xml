@@ -7,15 +7,26 @@
     tools:context=".covid_map.CovidMapFragment"
     >
 
+
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
+
         <com.mapbox.mapboxsdk.maps.MapView
             android:id="@+id/mapView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="wrap_content"
+            android:layout_below="@id/datePicker"/>
+
+        <com.github.jhonnyx2012.horizontalpicker.HorizontalPicker
+            android:id="@+id/datePicker"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            />
 
     </RelativeLayout>
+
+
 
 
 </FrameLayout>

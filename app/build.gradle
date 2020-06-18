@@ -47,4 +47,7 @@ dependencies {
 
     //iTextpdf
     implementation 'com.itextpdf:itextg:5.5.10'
+
+    //Horizontal picker
+    implementation 'com.github.jhonnyx2012:horizontal-picker:1.0.6'
 }
