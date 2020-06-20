@@ -224,10 +224,10 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
     private void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
 
-        try {
+//        try {
             loadedMapStyle.addSource(
-//                    new GeoJsonSource(geoJsonSourceId, String.valueOf(geoJson),
-                    new GeoJsonSource(geoJsonSourceId,
+                    new GeoJsonSource(geoJsonSourceId, String.valueOf(geoJson),
+//                    new GeoJsonSource(geoJsonSourceId,
 //                            new URI("asset://earthquakes.geojson"),
                             new GeoJsonOptions()
                                     .withCluster(false)
@@ -235,9 +235,9 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 //                                    .withClusterRadius(1)
                     )
             );
-        } catch (URISyntaxException uriSyntaxException) {
-            Timber.e("Check the URL %s", uriSyntaxException.getMessage());
-        }
+//        } catch (URISyntaxException uriSyntaxException) {
+//            Timber.e("Check the URL %s", uriSyntaxException.getMessage());
+//        }
 
         SymbolLayer unclustered = new SymbolLayer("unclustered-points", geoJsonSourceId);
         unclustered.setProperties(
