@@ -336,9 +336,9 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
                 FragmentTransaction transection=getFragmentManager().beginTransaction();
                 CovidPlotFragment mfragment=new CovidPlotFragment();
-                CovidPlotFragment.country = feature.getStringProperty("country");
+                CovidPlotFragment.country = feature.getStringProperty("country-slug");
                 Bundle bundle=new Bundle();
-                bundle.putString("country",feature.getStringProperty("country"));
+                bundle.putString("country",feature.getStringProperty("country-slug"));
                 mfragment.setArguments(bundle); //data being send to SecondFragment
                 transection.replace(R.id.container, mfragment);
                 transection.commit();

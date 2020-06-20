@@ -20,13 +20,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.components.IMarker;
 import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
@@ -39,8 +39,6 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.gson.JsonObject;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.itextpdf.text.Chunk;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -50,10 +48,6 @@ import com.main.covis.R;
 import com.main.covis.network.ApiClient;
 import com.main.covis.network.ApiService;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,12 +56,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -347,8 +340,8 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             System.out.println("TEST: !");
             e.printStackTrace();
         }
-            System.out.println("TEST: !!!!");
-            return String.format("%.2fM", population/ 1000000.0);
+        System.out.println("TEST: !!!!");
+        return String.format("%.2fM", population/ 1000000.0);
     }
 
 
@@ -390,22 +383,6 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         switch (position){
             case 0:
                 newTYPE = CovidCasesType.ACTIVE;
-                    System.out.println("dawaj" + getActivity().getFilesDir().getPath().toString());
-                    PdfWriter.getInstance(doc, new FileOutputStream( filePath));
-                    doc.open();
-                    doc.add(new Chunk("XD"));
-                    Image image = Image.getInstance(stream.toByteArray());
-                    float scaler = ((doc.getPageSize().getWidth() - doc.leftMargin()
-                            - doc.rightMargin() - 0) / image.getWidth()) * 100;
-                    image.scalePercent(scaler);
-                    image.setAlignment(Image.ALIGN_CENTER | Image.ALIGN_TOP);
-                    doc.add(image);
-                } catch (DocumentException | IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    doc.close();
-                }
-
                 break;
             case 1:
                 newTYPE = CovidCasesType.DEATH;
@@ -499,7 +476,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                 call = apiService.getListEpidemyDataInCountry("Poland", dtf.format(now.plusDays(range.days)), dtf.format(now), TYPE.name());
                 System.out.println("LABEL: WEEK");
                 break;
-                }
+            }
             case FORECAST:{
                 call = apiService.getListEpidemyForecastInCountry("Poland", dtf.format(now.plusDays(-7)), dtf.format(now.plusDays(7)), TYPE.name());
                 System.out.println("LABEL: Forecast");
