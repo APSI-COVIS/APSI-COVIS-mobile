@@ -196,6 +196,8 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
                             mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(
                                     51.919438, 19.145136), 2.6));
+//                                    30.5,
+//                                    -40.5), 3));
 
                             addClusteredGeoJsonSource(style);
                             style.addImage(
@@ -222,10 +224,10 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
     private void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
 
-//        try {
+        try {
             loadedMapStyle.addSource(
-                    new GeoJsonSource(geoJsonSourceId, String.valueOf(geoJson),
-//                    new GeoJsonSource(geoJsonSourceId,
+//                    new GeoJsonSource(geoJsonSourceId, String.valueOf(geoJson),
+                    new GeoJsonSource(geoJsonSourceId,
 //                            new URI("asset://earthquakes.geojson"),
                             new GeoJsonOptions()
                                     .withCluster(false)
@@ -233,9 +235,9 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 //                                    .withClusterRadius(1)
                     )
             );
-//        } catch (URISyntaxException uriSyntaxException) {
-//            Timber.e("Check the URL %s", uriSyntaxException.getMessage());
-//        }
+        } catch (URISyntaxException uriSyntaxException) {
+            Timber.e("Check the URL %s", uriSyntaxException.getMessage());
+        }
 
         SymbolLayer unclustered = new SymbolLayer("unclustered-points", geoJsonSourceId);
         unclustered.setProperties(
@@ -334,8 +336,9 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
 
                 FragmentTransaction transection=getFragmentManager().beginTransaction();
                 CovidPlotFragment mfragment=new CovidPlotFragment();
+                CovidPlotFragment.country = feature.getStringProperty("country");
                 Bundle bundle=new Bundle();
-                bundle.putString("country",feature.getStringProperty("country-slug"));
+                bundle.putString("country",feature.getStringProperty("country"));
                 mfragment.setArguments(bundle); //data being send to SecondFragment
                 transection.replace(R.id.container, mfragment);
                 transection.commit();

@@ -7,4 +7,5 @@
     <string name="plot_button">Show</string>
     <string name="country_name">Poland</string>
     <string name="population">37,97 mln</string>
+    <string name="to_pdf">to PDF</string>
 </resources>

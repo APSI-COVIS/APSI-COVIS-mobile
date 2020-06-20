@@ -20,21 +20,13 @@
             <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="0dp"
-                android:layout_weight="10"
+                android:layout_weight="5"
                 android:background="@color/colorPrimaryDark"
                 android:orientation="horizontal"
                 android:tileMode="repeat" >
 
-                <Spinner
-                    android:id="@+id/spinner"
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    style="@style/Widget.AppCompat.Light.DropDownItem.Spinner"
-
-                    />
-<!--                android:background="@drawable/spinner_background"-->
+                <!--                android:background="@drawable/spinner_background"-->
 <!--                    android:theme="@style/spinner_style"-->
-                    />
 <!--                    android:layout_width="wrap_content"-->
 <!--                    android:layout_height="match_parent"-->
 <!--                    android:background="@android:color/holo_blue_bright"-->
@@ -42,45 +34,77 @@
 <!--                    android:layout_marginHorizontal="5dp"-->
 <!--                    android:popupBackground="@android:color/holo_blue_bright"/>-->
 
-<!--                <Button-->
-<!--                    android:id="@+id/plot_button"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="@string/plot_button" />-->
+                <Spinner
+                    android:id="@+id/typeSpinner"
+                    style="@style/Widget.AppCompat.Light.DropDownItem.Spinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginTop="2dp"/>
+
                 <View
                     android:layout_width="0dp"
                     android:layout_height="0dp"
                     android:layout_weight="1" />
 
-                <TextView
-                    android:id="@+id/countryName"
+                <Spinner
+                    android:id="@+id/dateSpinner"
+                    style="@style/Widget.AppCompat.Light.DropDownItem.Spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/country_name"
-                    android:textColor="@android:color/holo_blue_bright"
-                    android:textSize="25dp"
-                    android:layout_marginVertical="10dp"
-                    android:layout_marginHorizontal="5dp">
-                </TextView>
+                    android:layout_weight="1"
+                    android:layout_marginTop="2dp"/>
 
-                <TextView
-                    android:id="@+id/population"
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <Button
+                    android:id="@+id/pdfButton"
+                    android:text="@string/to_pdf"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/population"
-                    android:textColor="@android:color/holo_blue_bright"
-                    android:textSize="20dp"
-                    android:layout_marginVertical="10dp"
-                    android:layout_marginHorizontal="5dp">
-                </TextView>
+                    android:layout_marginTop="2dp"
+                    android:layout_marginLeft="5dp"
+                    android:textSize="12sp"
+                    android:padding="2dp"/>
 
-            </LinearLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="5"
+            android:background="@color/colorPrimaryDark"
+            android:orientation="horizontal"
+            android:gravity="right"
+            android:textAlignment="gravity"
+            android:tileMode="repeat" >
+            <TextView
+                android:id="@+id/country_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="5dp"
+                android:layout_marginVertical="5dp"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/population"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="5dp"
+                android:layout_marginVertical="5dp"
+                android:textSize="16sp" />
+        </LinearLayout>
+
             <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="0dp"
                 android:layout_weight="90"
                 android:orientation="horizontal"
                 android:tileMode="repeat" >
+
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/line_chart"
                     android:layout_width="match_parent"
