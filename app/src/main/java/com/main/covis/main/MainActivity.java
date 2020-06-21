@@ -2,8 +2,6 @@ package com.main.covis.main;
 
 import android.os.Bundle;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -44,10 +42,6 @@ public class MainActivity extends AppCompatActivity implements MainContract.View
                 getSupportFragmentManager().beginTransaction().replace(R.id.container, covidPlotFragment).commit();
                 return true;
         }
-
-
-
-
         return false;
     }
     @Override
