@@ -444,7 +444,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             LocalDate now = LocalDate.of(2020, 6, 8);
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd");
             System.out.println(dtf.format(now.plusDays((int) -value)));
-            return dtf.format(now.plusDays( (int)value -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 7)));
+            return dtf.format(now.plusDays( (int)value -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 14)));
         }
     }
 
@@ -486,7 +486,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                 break;
             }
             case FORECAST:{
-                call = apiService.getListEpidemyForecastInCountry(country, dtf.format(now.plusDays(-7)), dtf.format(now.plusDays(7)), TYPE.name());
+                call = apiService.getListEpidemyForecastInCountry(country, dtf.format(now.plusDays(0)), dtf.format(now.plusDays(7)), TYPE.name());
                 System.out.println("LABEL: Forecast " + TYPE.name());
                 break;
             }
@@ -533,7 +533,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             //LocalDate now = LocalDate.now();
             LocalDate now = LocalDate.of(2020, 6, 8);
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd");
-            tvContent.setText( dtf.format(now.plusDays( (int)e.getX() -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 7))) + "\n" + (int)e.getY());
+            tvContent.setText( dtf.format(now.plusDays( (int)e.getX() -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 14))) + "\n" + (int)e.getY());
 
             // this will perform necessary layouting
             super.refreshContent(e, highlight);
