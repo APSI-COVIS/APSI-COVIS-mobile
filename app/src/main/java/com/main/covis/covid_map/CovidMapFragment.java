@@ -150,7 +150,7 @@ public class CovidMapFragment extends Fragment implements CovidMapContract.View,
             }).setDays(190)
                     .setOffset(180)
                     .init();
-            picker.setDate(new DateTime());
+            picker.setDate(new DateTime(2020, 6, 8, 0, 0));
 
 
 

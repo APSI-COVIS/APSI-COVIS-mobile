@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -36,6 +38,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.MPPointF;
+import com.github.mikephil.charting.utils.Utils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.gson.JsonObject;
 import com.itextpdf.text.Chunk;
@@ -48,8 +51,6 @@ import com.main.covis.network.ApiClient;
 import com.main.covis.network.ApiService;
 
 import org.jetbrains.annotations.NotNull;
-import org.json.JSONArray;
-import org.json.JSONException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -57,6 +58,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
@@ -90,8 +92,8 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
 
     public enum DateRange {
         WHOLE_PERIOD (90, "Whole Period"),
-        MONTH (30, "Week"),
-        WEEK (7, "Month"),
+        MONTH (30, "Month"),
+        WEEK (7, "Week"),
         FORECAST(14, "Forecast");
         private final int days;
         private final String label;
@@ -113,7 +115,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     private static CovidCasesType newTYPE = CovidCasesType.ACTIVE;
     private static DateRange newDATERANGE = DateRange.WHOLE_PERIOD;
 
-    public static String country = null;
+    public static String country = "Poland";
     String population = null;
 
 
@@ -121,28 +123,11 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     @Override
     public View onCreateView(@NotNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        System.out.println("onCreateView");
         BottomNavigationView bottomNavigationView = Objects.requireNonNull(getActivity()).findViewById(R.id.bottom_navigation);
         bottomNavigationView.setSelectedItemId(R.id.details);
         final View rootView = inflater.inflate(R.layout.fragment_details, container, false);
-//        final Bundle bundle = getArguments();
-//        if(bundle != null && bundle.containsKey("country")) {
-//            System.out.println("BUNDLE");
-//            //bundleHandler(rootView, bundle, bundle.getString("country"), getPopulation(bundle.getString("country")));
-//            super.onViewCreated(rootView, savedInstanceState);
-//            super.onCreate(savedInstanceState);
-//            country = bundle.getString("country");
-//            population = getPopulation(bundle.getString("country"));
-//            System.out.println(country + ": " + population);
-//            TextView tvCountry = (TextView) rootView.findViewById(R.id.country_name);
-//            TextView tvPopulation = (TextView) rootView.findViewById(R.id.population);
-//            tvCountry.setText(country);
-//            tvPopulation.setText(population);
-//            tvCountry.invalidate();
-//            tvPopulation.invalidate();
-//            rootView.invalidate();
-//            super.onViewCreated(rootView, savedInstanceState);
-//            super.onCreate(savedInstanceState);
-//        }
+
         int SDK_INT = android.os.Build.VERSION.SDK_INT;
         if (SDK_INT > 8) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
@@ -151,33 +136,6 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
 
             super.onViewCreated(rootView, savedInstanceState);
             super.onCreate(savedInstanceState);
-
-
-//            final Bundle bundle = getArguments();
-//            if(bundle != null && bundle.containsKey("country")) {
-//                System.out.println("BUNDLE");
-//                //bundleHandler(rootView, bundle, bundle.getString("country"), getPopulation(bundle.getString("country")));
-//                super.onViewCreated(rootView, savedInstanceState);
-//                super.onCreate(savedInstanceState);
-//                country = bundle.getString("country");
-//                population = getPopulation(bundle.getString("country"));
-//                System.out.println(country + ": " + population);
-//                TextView tvCountry = (TextView) rootView.findViewById(R.id.country_name);
-//                TextView tvPopulation = (TextView) rootView.findViewById(R.id.population);
-//                tvCountry.setText(country);
-//                tvPopulation.setText(population);
-//                tvCountry.invalidate();
-//                tvPopulation.invalidate();
-//                rootView.invalidate();
-//                super.onViewCreated(rootView, savedInstanceState);
-//                super.onCreate(savedInstanceState);
-//            }
-//                tvCountry.setText(country);
-//                tvPopulation.setText(population);
-//                System.out.println("BUNDLE");
-//                tvCountry.invalidate();
-//                tvPopulation.invalidate();
-//                rootView.invalidate();
 
             population = getPopulation(country);
             System.out.println(country + ": " + population);
@@ -190,7 +148,11 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             rootView.invalidate();
 
 
-            mpLineChartHandler(rootView);
+            try {
+                mpLineChartHandler(rootView);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             spinnerHandler(rootView);
 
             Button clickButton = (Button) rootView.findViewById(R.id.pdfButton);
@@ -206,12 +168,37 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private void mpLineChartHandler(View rootView) {
+    private void mpLineChartHandler(View rootView) throws IOException {
+        System.out.println("mpLineChartHandler");
         mpLineChart = (LineChart) rootView.findViewById(R.id.line_chart);
-        LineDataSet activeDataSet = new LineDataSet(getRandomCovidData(DateRange.WHOLE_PERIOD), CovidCasesType.ACTIVE.label);
+        LineDataSet activeDataSet = new LineDataSet(getCovidData(DATERANGE), TYPE.label);
         activeDataSet.setDrawValues(false);
-        activeDataSet.setColor(Color.RED);
         activeDataSet.setDrawFilled(true);
+        activeDataSet.setColor(Color.rgb(20,20, 220));
+        activeDataSet.setDrawFilled(true);
+        Drawable drawable = ContextCompat.getDrawable(rootView.getContext(), R.drawable.fade_light_blue);
+        if (Utils.getSDKInt() >= 18) {
+            // fill drawable only supported on api level 18 and above
+            switch (TYPE) {
+                case ACTIVE: {
+                    drawable = ContextCompat.getDrawable(rootView.getContext(), R.drawable.fade_light_blue);
+                    break;
+                }
+                case NEW: {
+                    drawable = ContextCompat.getDrawable(rootView.getContext(), R.drawable.fade_blue);
+                    break;
+                }
+                case RECOVERED: {
+                    drawable = ContextCompat.getDrawable(rootView.getContext(), R.drawable.fade_green);
+                    break;
+                }
+                case DEATH: {
+                    drawable = ContextCompat.getDrawable(rootView.getContext(), R.drawable.fade_red);
+                    break;
+                }
+            }
+        }
+        activeDataSet.setFillDrawable(drawable);
         ArrayList<ILineDataSet> dataSets = new ArrayList<>();
         dataSets.add(activeDataSet);
 
@@ -244,13 +231,14 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         IMarker marker = new MyMarkerView(rootView.getContext(), R.layout.custom_marker_view_layout);
         mpLineChart.setMarker(marker);
 
-        mpLineChart.getDescription().setText(country + ": " + population);
+        //mpLineChart.getDescription().setText(country + ": " + population);
         mpLineChart.notifyDataSetChanged();
         mpLineChart.invalidate();
         System.out.println("KAPPA");
     }
 
     private void spinnerHandler(View rootView) {
+        System.out.println("spinnerHandler");
         Spinner typeSpin = (Spinner) rootView.findViewById(R.id.typeSpinner);
         typeSpin.setOnItemSelectedListener((AdapterView.OnItemSelectedListener) this);
 
@@ -270,18 +258,6 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         DateSpin.setAdapter(aa2);
     }
 
-    private void bundleHandler(View rootView, Bundle bundle, String country, String population){
-        if (bundle != null) {
-            System.out.println(bundle.getString("country"));
-            TextView tvCountry = (TextView) rootView.findViewById(R.id.country_name);
-            TextView tvPopulation = (TextView) rootView.findViewById(R.id.population);
-            tvCountry.setText(country);
-            tvPopulation.setText(population);
-            System.out.println("BUNDLE");
-            tvCountry.invalidate();
-            tvPopulation.invalidate();
-        }
-    }
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void toPdfButton(){
 
@@ -293,13 +269,14 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         bm.compress(Bitmap.CompressFormat.JPEG, 80 , stream);
         Document doc = new Document();
         try {
-            LocalDate now = LocalDate.now();
+            //LocalDate now = LocalDate.now();
+            LocalDate now = LocalDate.of(2020, 6, 8);
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            String filePath = "/storage/emulated/0/Download/" + TYPE.label + "-" + DATERANGE.label + "-" + dtf.format(now) + ".pdf";
+            String filePath = "/storage/emulated/0/Download/" + country + "-" + TYPE.label + "-" + DATERANGE.label + "-" + dtf.format(now) + ".pdf";
 //            System.out.println("dawaj" + Objects.requireNonNull(getActivity()).getFilesDir().getPath().toString());
             PdfWriter.getInstance(doc, new FileOutputStream( filePath));
             doc.open();
-            doc.add(new Chunk(DATERANGE.label));
+            doc.add(new Chunk( country + ": " + DATERANGE.label));
             Image image = Image.getInstance(stream.toByteArray());
             float scaler = ((doc.getPageSize().getWidth() - doc.leftMargin()
                     - doc.rightMargin() - 0) / image.getWidth()) * 100;
@@ -314,18 +291,19 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
     private String getPopulation(String cSlug) {
-        System.out.println("TEST: !!!");
+        System.out.println("getPopulation");
         int population = 3942312;
-        LocalDate now = LocalDate.now();
+        //LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.of(2020, 6, 8);
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         Retrofit retrofit = ApiClient.getClient();
         ApiService apiService = retrofit.create(ApiService.class);
         //Call<JsonObject> call = apiService.getListEpidemyDataInCountry("POL", "2020-05-15", "2020-05-24", "ACTIVE");
-        Call<JsonObject> call = apiService.getCountryPopulation("Poland", dtf.format(now));
+        Call<JsonObject> call = apiService.getCountryPopulation(country, dtf.format(now));
         //Call<JsonObject> call = apiService.getListEpidemyForecastInCountry("POL", "2020-05-15", "2020-05-24", "ACTIVE");
         try {
             JsonObject json = call.execute().body();
-            System.out.println("TEST: " + json);
+            System.out.println("population json: " + json);
             if(json != null){
                 population = Integer.parseInt(String.valueOf(json.get("population")));
             }else{
@@ -333,10 +311,11 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             }
 
         } catch (IOException e) {
-            System.out.println("TEST: !");
             e.printStackTrace();
         }
-        System.out.println("TEST: !!!!");
+        if(population < 0){
+            population = 0;
+        }
         return String.format("%.2fM", population/ 1000000.0);
     }
 
@@ -345,7 +324,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         //Toast.makeText(Objects.requireNonNull(getActivity()).getApplicationContext(),country[position] , Toast.LENGTH_LONG).show();
-        System.out.println("KAPPA0");
+        System.out.println("onItemSelected");
         if(parent.getId() == R.id.typeSpinner)
         {
             typeSpinnerHandler(position);
@@ -355,23 +334,54 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
             dateSpinnerHandler(position);
         }
         if(newDATERANGE == DATERANGE && newTYPE==TYPE){
-            System.out.println("KAPPA1");
+            System.out.println("newDATERANGE == DATERANGE && newTYPE==TYPE");
             return;
         } else{
-            System.out.println("KAPPA2");
+            System.out.println("! newDATERANGE == DATERANGE && newTYPE==TYPE");
             DATERANGE = newDATERANGE;
             TYPE=newTYPE;
         }
-        System.out.println("KAPPA3");
-        LineDataSet dataSet = new LineDataSet( getCovidData(DATERANGE, "Poland"), TYPE.label);
+
+        LineDataSet dataSet = null;
+        try {
+            dataSet = new LineDataSet( getCovidData(DATERANGE), TYPE.label);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assert dataSet != null;
         dataSet.setDrawValues(false);
-        dataSet.setColor(Color.rgb(220,20, 20));
+        dataSet.setColor(Color.rgb(20,20, 220));
         dataSet.setDrawFilled(true);
+        if (Utils.getSDKInt() >= 18) {
+            Drawable drawable = ContextCompat.getDrawable(view.getContext(), R.drawable.fade_light_blue);
+            // fill drawable only supported on api level 18 and above
+            switch(TYPE){
+                case ACTIVE:{
+                    drawable = ContextCompat.getDrawable(view.getContext(), R.drawable.fade_light_blue);
+                    break;
+                }
+                case NEW:{
+                    drawable = ContextCompat.getDrawable(view.getContext(), R.drawable.fade_blue);
+                    break;
+                }
+                case RECOVERED:{
+                    drawable = ContextCompat.getDrawable(view.getContext(), R.drawable.fade_green);
+                    break;
+                }
+                case DEATH:{
+                    drawable = ContextCompat.getDrawable(view.getContext(), R.drawable.fade_red);
+                    break;
+                }
+            }
+            //Drawable drawable = ContextCompat.getDrawable(this, R.drawable.fade_red);
+            dataSet.setFillDrawable(drawable);
+        }
         mpLineChart.getData().addDataSet(dataSet);
         mpLineChart.getData().removeDataSet(0);
         mpLineChart.notifyDataSetChanged();
         mpLineChart.invalidate();
-        System.out.println("KAPPA4");
+        System.out.println("KAPPA");
     }
 
     private void typeSpinnerHandler(int position) {
@@ -400,10 +410,10 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
                 newDATERANGE = DateRange.WHOLE_PERIOD;
                 break;
             case 1:
-                newDATERANGE = DateRange.WEEK;
+                newDATERANGE = DateRange.MONTH;
                 break;
             case 2:
-                newDATERANGE = DateRange.MONTH;
+                newDATERANGE = DateRange.WEEK;
                 break;
             case 3:
                 newDATERANGE = DateRange.FORECAST;
@@ -430,7 +440,8 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public String getFormattedValue(float value) {
-            LocalDate now = LocalDate.now();
+            //LocalDate now = LocalDate.now();
+            LocalDate now = LocalDate.of(2020, 6, 8);
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd");
             System.out.println(dtf.format(now.plusDays((int) -value)));
             return dtf.format(now.plusDays( (int)value -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 7)));
@@ -449,53 +460,51 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private ArrayList<Entry> getCovidData (DateRange range, String cslug){
-        ArrayList<Entry> dataVals = new ArrayList<Entry>();
-
-        LocalDate now = LocalDate.now();
+    private ArrayList<Entry> getCovidData(DateRange range) throws IOException {
+        final ArrayList<Entry> dataVals = new ArrayList<Entry>();
+        System.out.println("getCovidData");
+        //LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.of(2020, 6, 8);
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         Retrofit retrofit = ApiClient.getClient();
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<JsonObject> call = null;
+        Call<List<CovidCase>> call = null;
         switch(range){
             case WHOLE_PERIOD:{
-                System.out.println("LABEL: WHOLE");
-                call = apiService.getListEpidemyDataInCountry("Poland", "2020-01-01", dtf.format(now), TYPE.name());
+                System.out.println("LABEL: WHOLE " + TYPE.name());
+                call = apiService.getListEpidemyDataInCountry(country, "2020-03-01", dtf.format(now), TYPE.name());
                 break;
             }
             case MONTH:{
-                System.out.println("LABEL: MONTH");
-                call = apiService.getListEpidemyDataInCountry("Poland", dtf.format(now.plusDays(range.days)), dtf.format(now), TYPE.name());
+                System.out.println("LABEL: MONTH " + TYPE.name());
+                call = apiService.getListEpidemyDataInCountry(country, dtf.format(now.plusDays(-range.days)), dtf.format(now), TYPE.name());
                 break;
             }
             case WEEK:{
-                call = apiService.getListEpidemyDataInCountry("Poland", dtf.format(now.plusDays(range.days)), dtf.format(now), TYPE.name());
-                System.out.println("LABEL: WEEK");
+                call = apiService.getListEpidemyDataInCountry(country, dtf.format(now.plusDays(-range.days)), dtf.format(now), TYPE.name());
+                System.out.println("LABEL: WEEK " + TYPE.name());
                 break;
             }
             case FORECAST:{
-                call = apiService.getListEpidemyForecastInCountry("Poland", dtf.format(now.plusDays(-7)), dtf.format(now.plusDays(7)), TYPE.name());
-                System.out.println("LABEL: Forecast");
+                call = apiService.getListEpidemyForecastInCountry(country, dtf.format(now.plusDays(-7)), dtf.format(now.plusDays(7)), TYPE.name());
+                System.out.println("LABEL: Forecast " + TYPE.name());
                 break;
             }
         }
 
         System.out.println("TEST: @@@");
 
-        try {
-            JsonObject json = call.execute().body();
-            System.out.println("TEST: " + json);
-            JSONArray arr = new JSONArray(json);
-            for(int i = 0; i < arr.length(); i++){
-                System.out.println("CASES: " + arr.getJSONObject(i).get("cases"));
-                dataVals.add(new Entry(i, Integer.parseInt(String.valueOf(arr.getJSONObject(i).get("cases")))));
+        List<CovidCase> covidCases = call.execute().body();
+        if(covidCases != null){
+            System.out.println("Number of days :"+ covidCases.size());
+            for(int i = 0; i < covidCases.size(); i++){
+                System.out.println(i + " CASES: " + covidCases.get(i).getCases());
+                dataVals.add(new Entry(i, covidCases.get(i).getCases() > 0 ? covidCases.get(i).getCases() : 0));
             }
-
-        } catch (IOException | JSONException e) {
-            System.out.println("TEST: !");
-            e.printStackTrace();
         }
 
+
+        System.out.println("SYNCHRO");
         return dataVals;
     }
 
@@ -504,7 +513,7 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         System.out.println("Plot Fragment");
     }
 
-    public class MyMarkerView extends MarkerView {
+    public static class MyMarkerView extends MarkerView {
 
         private TextView tvContent;
 
@@ -521,7 +530,8 @@ public class CovidPlotFragment extends Fragment implements CovidPlotContract.Vie
         @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void refreshContent(Entry e, Highlight highlight) {
-            LocalDate now = LocalDate.now();
+            //LocalDate now = LocalDate.now();
+            LocalDate now = LocalDate.of(2020, 6, 8);
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd");
             tvContent.setText( dtf.format(now.plusDays( (int)e.getX() -DATERANGE.days + ((DATERANGE != DateRange.FORECAST) ? 0 : 7))) + "\n" + (int)e.getY());
 
